@@ -38,7 +38,10 @@ console.log('2')
 }
 
 function viewRole(){
-console.log('3')
+db.query('SELECT role.id, role.title, role.salary, department.name AS department FROM department_role AS role JOIN department ON  role.department_id = department.id', function (err, results) {
+        console.table(results);
+        onStart()
+  });
 }
 
 function addRole(){
@@ -46,7 +49,10 @@ console.log('4')
 }
 
 function viewDep(){
-console.log('5')
+    db.query('SELECT dep.id, dep.name AS department FROM department AS dep', function (err, results) {
+        console.table(results);
+        onStart()
+  });
 }
 
 function addDep(){
@@ -54,7 +60,7 @@ console.log('6')
 }
 
 function quit(){
-console.log('7')
+console.log('^c')
 }
 
 onStart()
