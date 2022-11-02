@@ -151,7 +151,6 @@ function updateMan(){
     let managers = []
     let ManId 
     db.query(`SELECT CONCAT(dep.first_name,' ', dep.last_name) AS employee FROM department_employee AS dep`, function (err, results) {
-        console.log(results)
         for(i=0;i<results.length;i++){
            employee.push(results[i].employee)
         }
@@ -265,6 +264,7 @@ function sumCost(){
     db.query('SELECT dep.name AS department, SUM(salary) AS cost FROM department_role JOIN department AS dep ON  department_role.department_id = dep.id GROUP BY department', function (err, results) {
         console.log(err)
         console.table(results);
+        onStart()
       });
 }
 
