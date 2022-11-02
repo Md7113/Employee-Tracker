@@ -10,24 +10,34 @@ const db = mysql.createConnection(
         database: 'emp_track_db'
     }
 )
-console.log(`*----------------------------------------------------------------*
-|    _       _     _______    _          _           _______     |
-|   | |     | |   |  _____|  | |        | |         /  ___  \\    |
-|   | |     | |   | |        | |        | |        /  /   \\  \\   |
-|   | |_____| |   | |_____   | |        | |        |  |   |  |   |
-|   |  _____  |   |  _____|  | |        | |        |  |   |  |   |
-|   | |     | |   | |        | |        | |        |  |   |  |   |
-|   | |     | |   | |_____   | |_____   | |_____   \\  \\___/  /   |
-|   |_|     |_|   |_______|  |_______|  |_______|   \\_______/    |
-|                                                                |
-*----------------------------------------------------------------*
+console.log(`
+*----------------------------------------------------------------------*
+|    _       _     _________    _            _             _______     |
+|   | |     | |   |  _______|  | |          | |           /  ___  \\    |
+|   | |     | |   | |          | |          | |          /  /   \\  \\   |
+|   | |_____| |   | |_______   | |          | |          |  |   |  |   |
+|   |  _____  |   |  _______|  | |          | |          |  |   |  |   |
+|   | |     | |   | |          | |          | |          |  |   |  |   |
+|   | |     | |   | |_______   | |_______   | |_______   \\  \\___/  /   |
+|   |_|     |_|   |_________|  |_________|  |_________|   \\_______/    |
+|                                                                      |
+|    _________     _       _    _________    ________     _________    |
+|   |___   ___|   | |     | |  |  _______|  /  ____  \\   |  _______|   |
+|       | |       | |     | |  | |          | |    | |   | |           |
+|       | |       | |_____| |  | |_______   | |____| |   | |_______    |
+|       | |       |  _____  |  |  _______|  |  __  __/   |  _______|   |
+|       | |       | |     | |  | |          | |  \\ \\     | |           |
+|       | |       | |     | |  | |_______   | |   \\ \\    | |_______    |
+|       |_|       |_|     |_|  |_________|  |_|    \\_\\   |_________|   |
+|                                                                      |
+*----------------------------------------------------------------------*
 `)
 function onStart(){
 inquirer.prompt([{
     name : 'Choice',
     message: 'What would you like to do?',
     type: 'list',
-    choices: ['Add Employee','Update Employee Role','View All Roles','Add Role','View All Deparments','Add Depertment','View All Employees','Quit']
+    choices: ['Add Employee','Update Employee Role','Update Employee Manager','View All Roles','Add Role','View All Deparments','Add Depertment','view cost of department','View All Employees','View All Employees by manager','View All Employees by deperatment','Quit']
 }]).then(function(request){
     let tempFunk = request.Choice
     if(tempFunk == 'Add Employee') addEmployee() 
@@ -36,8 +46,12 @@ inquirer.prompt([{
     if(tempFunk == 'Add Role') addRole() 
     if(tempFunk == 'View All Deparments') viewDep() 
     if(tempFunk == 'Add Depertment') addDep() 
-    if(tempFunk == 'View All Employees') viewEmp() 
+    if(tempFunk == 'View All Employees') viewEmp('role.id') 
+    if(tempFunk == 'View All Employees by manager') viewEmp('manager') 
+    if(tempFunk == 'View All Employees by deperatment') viewEmp('department') 
+    if(tempFunk == 'Update Employee Manager') updateMan()
     if(tempFunk == 'Quit') quit() 
+    if(tempFunk == 'view cost of department') sumCost()
 })
 }
 
@@ -79,8 +93,7 @@ function addEmployee(){
         type: 'list',
         choices: managers
     }
-    ]).then(function(response){
-        console.log(response)
+    ]).then(function(response){ 
         db.query('SELECT * FROM department_role WHERE title=?',response.role, function (err, results) {
             tempRoleId = results[0].id
             db.query('SELECT * FROM department_employee WHERE first_name=?',response.manager, function (err, results) {
@@ -97,10 +110,9 @@ function updateEmp(){
     let employee = []
     let roles = []
     let RoleId 
-    db.query('SELECT dep.first_name FROM department_employee AS dep', function (err, results) {
-        console.log(results)
+    db.query(`SELECT CONCAT(dep.first_name,' ', dep.last_name) AS employee FROM department_employee AS dep`, function (err, results) {
         for(i=0;i<results.length;i++){
-           employee.push(results[i].first_name)
+           employee.push(results[i].employee)
         }
     
 
@@ -123,12 +135,51 @@ function updateEmp(){
             }
             ]).then(function(response){
                 db.query('SELECT * FROM department_role WHERE title=?',response.roleAssign, function (err, results) {
-                    console.log(response.roleAssign)
-                    console.log(response.employeeSelect)
                     RoleId = results[0].id
-                    db.query(`UPDATE department_employee SET role_id = '${RoleId}' WHERE first_name = '${response.employeeSelect}'`,function (err, results) {
-                        console.log(err)
-                        console.table(results);
+                    let splitName = response.employeeSelect.split(' ')
+                    db.query(`UPDATE department_employee SET role_id = '${RoleId}' WHERE first_name= '${splitName[0]}' AND last_name = '${splitName[1]}'`,function (err, results) {
+                        onStart()
+                    })
+                })
+            })
+        })
+    })
+}
+
+function updateMan(){
+    let employee = []
+    let managers = []
+    let ManId 
+    db.query(`SELECT CONCAT(dep.first_name,' ', dep.last_name) AS employee FROM department_employee AS dep`, function (err, results) {
+        console.log(results)
+        for(i=0;i<results.length;i++){
+           employee.push(results[i].employee)
+        }
+    
+
+        db.query(`SELECT CONCAT(dep.first_name,' ', dep.last_name) AS employee FROM department_employee AS dep`, function (err, results) {
+
+            for(i=0;i<results.length;i++){
+                managers.push(results[i].employee)
+            }
+
+            inquirer.prompt([{
+                name : 'employeeSelect',
+                message: 'Which employee would you like to update',
+                type: 'list',
+                choices: employee
+            },{
+                name : 'manAssign',
+                message: 'What manager would you like to give them?',
+                type: 'list',
+                choices: managers
+            }
+            ]).then(function(response){
+                let splitName = response.manAssign.split(' ')
+                let splitName1 = response.employeeSelect.split(' ')
+                db.query(`SELECT * FROM department_employee WHERE first_name= '${splitName[0]}' AND last_name = '${splitName[1]}'`, function (err, results) {
+                    ManId = results[0].id
+                    db.query(`UPDATE department_employee SET manager_id = '${ManId}' WHERE first_name= '${splitName1[0]}' AND last_name = '${splitName1[1]}'`,function (err, results) {
                         onStart()
                     })
                 })
@@ -170,13 +221,9 @@ function addRole(){
     }
     ]).then(function(response){
         db.query('SELECT * FROM department WHERE name=?',response.roleDepart, function (err, results) {
-            console.log(results)
            tempId = results[0].id
         db.query(`INSERT INTO department_role (title , salary , department_id) VALUES ('${response.roleName}' ,'${response.roleSalary}' ,'${tempId}')`  ,function (err, results) {
-            db.query('SELECT role.id, role.title, role.salary, department.name AS department FROM department_role AS role JOIN department ON  role.department_id = department.id ORDER BY role.id ASC', function (err, results) {
-                console.table(results);
                 onStart()
-          });
       });
       })
     })
@@ -196,30 +243,38 @@ inquirer.prompt([{
     type: 'input'
 }]).then(function(response){
     db.query('INSERT INTO department (name) VALUES(?)', response.departmentName ,function (err, results) {
-        db.query('SELECT dep.id, dep.name AS department FROM department AS dep', function (err, results) {
-            console.table(results);
             onStart()
-      })
   });
 })
 }
 
-function viewEmp(){
-    db.query(   `SELECT emp.id, emp.first_name, emp.last_name, role.title, role.salary ,department.name AS department , m.first_name AS manager
+function viewEmp(passOrder){
+    db.query(   `SELECT emp.id, emp.first_name, emp.last_name, role.title, role.salary ,department.name AS department , CONCAT(m.first_name, ' ', m.last_name) AS manager
                 FROM department_employee AS emp 
                 JOIN department_role AS role ON  emp.role_id = role.id
                 JOIN department ON  role.department_id = department.id
                 LEFT JOIN department_employee AS m ON m.id = emp.manager_id
-                ORDER BY role.id ASC`,
+                ORDER BY ${passOrder}`,
                  function (err, results) {
         console.table(results);
         onStart()
   });
 }
 
+function sumCost(){
+    db.query('SELECT dep.name AS department, SUM(salary) AS cost FROM department_role JOIN department AS dep ON  department_role.department_id = dep.id GROUP BY department', function (err, results) {
+        console.log(err)
+        console.table(results);
+      });
+}
+
+
 function quit(){
 console.log('Thankyou for using sivad products')
+process.exit()
 }
+
+
 
 
 
